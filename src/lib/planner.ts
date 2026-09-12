@@ -263,11 +263,15 @@ export function buildTimedPlan(plan: Plan, visualEvery: number, rate: number): T
   const withCarry = carryLiteralVisuals(plan.segments)
   const paced = enforceVisualCadence(withCarry, visualEvery)
 
-  const segments: TimedSegment[] = paced.map((s) => ({
-    ...s,
-    chunks: chunkCaptions(s.text, s.emphasis),
-    estimatedDuration: estimateDuration(s.text, s.speed * rate, s.pauseAfterMs),
-  }))
+  const segments: TimedSegment[] = paced.map((s) => {
+    const speech = estimateDuration(s.text, s.speed * rate)
+    return {
+      ...s,
+      chunks: chunkCaptions(s.text, s.emphasis),
+      estimatedSpeech: speech,
+      estimatedDuration: speech + s.pauseAfterMs / 1000,
+    }
+  })
 
   return {
     title: plan.title,

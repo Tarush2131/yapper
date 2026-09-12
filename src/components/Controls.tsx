@@ -33,8 +33,9 @@ export function Controls({
     <div className="flex flex-col gap-3 px-4 pb-5 pt-3 sm:px-8">
       {/* One tick per beat — the whole structure of the script is scrubbable. */}
       <div className="flex items-center gap-2.5">
+        {/* The total is an estimate, so clamp rather than letting elapsed run past it. */}
         <span className="w-11 shrink-0 text-right font-mono text-[11px] tabular-nums text-white/35">
-          {clock(state.elapsed)}
+          {clock(Math.min(state.elapsed, total))}
         </span>
         <div className="flex h-6 flex-1 items-center gap-[2px]">
           {plan.segments.map((seg, i) => {

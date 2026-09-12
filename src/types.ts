@@ -116,7 +116,9 @@ export interface CaptionChunk {
 
 export interface TimedSegment extends Segment {
   chunks: CaptionChunk[]
-  /** Pre-synthesis estimate in seconds; replaced by the real duration once rendered. */
+  /** Estimated seconds of speech alone; replaced by the real duration once rendered. */
+  estimatedSpeech: number
+  /** `estimatedSpeech` plus the trailing pause. Used for totals and scrub widths. */
   estimatedDuration: number
 }
 

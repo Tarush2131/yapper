@@ -37,13 +37,20 @@ export class Player {
     this.cb.onState(this.state)
   }
 
+  /**
+   * `durations[i]` holds speech only, so the trailing pause is added separately.
+   * The estimate already bundles both, which is why the two branches differ.
+   */
   private elapsedThrough(index: number, progress: number): number {
+    const segments = this.plan?.segments ?? []
     let total = 0
     for (let i = 0; i < index; i++) {
-      total += this.durations[i] ?? this.plan?.segments[i].estimatedDuration ?? 0
-      total += (this.plan?.segments[i].pauseAfterMs ?? 0) / 1000
+      const measured = this.durations[i]
+      total += measured
+        ? measured + (segments[i]?.pauseAfterMs ?? 0) / 1000
+        : (segments[i]?.estimatedDuration ?? 0)
     }
-    const cur = this.durations[index] ?? this.plan?.segments[index]?.estimatedDuration ?? 0
+    const cur = this.durations[index] || segments[index]?.estimatedSpeech || 0
     return total + cur * progress
   }
 
