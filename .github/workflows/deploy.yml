@@ -1,8 +1,11 @@
-name: Build and deploy
+# Publishes dist/ to GitHub Pages.
+#
+# Manual on purpose. Before the first run, turn Pages on:
+#   Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+# then run this workflow from the Actions tab.
+name: Deploy to Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

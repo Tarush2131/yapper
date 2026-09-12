@@ -191,6 +191,11 @@ npm run typecheck  # types only
 npm run preview    # serve dist/
 ```
 
+`ci.yml` typechecks and builds on every push. `deploy.yml` publishes `dist/` to GitHub Pages
+and is manual on purpose — to use it, set **Settings → Pages → Source: GitHub Actions**, then
+run the workflow from the Actions tab. The build uses relative asset paths, so it works from a
+project-site subpath without further configuration.
+
 ---
 
 ## Known limits
