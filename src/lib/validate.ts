@@ -144,6 +144,17 @@ function validateVisual(raw: unknown, blocks: Block[], kind: SourceKind): Visual
 }
 
 /** Keep only emphasis words that actually occur in the beat. */
+/**
+ * The section header and its talking points. Points are capped at five because
+ * the panel is meant to be glanceable, not a second script.
+ */
+function sectionOf(s: Record<string, unknown>): { section?: string; points?: string[] } {
+  const section = str(s.section, 60)
+  if (!section) return {}
+  const points = strArray(s.points, 5, 70)
+  return points.length ? { section, points } : { section }
+}
+
 function validateEmphasis(raw: unknown, text: string): string[] {
   const lower = text.toLowerCase()
   return strArray(raw, 3, 24).filter((w) => {
@@ -200,6 +211,8 @@ export function validatePlan(raw: unknown, blocks: Block[], idPrefix = 's'): Val
       pauseAfterMs: clamp(s.pauseAfterMs, 0, 2000, 160),
       emphasis: validateEmphasis(s.emphasis, text),
       visual,
+      // Points without a section have nothing to hang off, so both or neither.
+      ...sectionOf(s),
     })
   })
 

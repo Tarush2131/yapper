@@ -88,6 +88,14 @@ export interface Segment {
   /** Words to hit hard. Drives both caption styling and text shaping. */
   emphasis: string[]
   visual: Visual | null
+  /**
+   * The chapter this beat sits in. Consecutive beats sharing a title are one
+   * section, and the stage keeps that section's points on screen throughout —
+   * the laid-back "what we are actually covering" layer next to the diagram.
+   */
+  section?: string
+  /** 2–5 high-level points for the section. Repeated on every beat within it. */
+  points?: string[]
 }
 
 export interface Plan {
@@ -162,6 +170,8 @@ export interface Settings {
   backend: TtsBackend
   /** Target seconds between visuals. */
   visualEvery: number
+  /** Hold one voice for the whole take instead of casting per beat. */
+  singleVoice: boolean
   /** Global speed multiplier applied on top of per-segment speed. */
   rate: number
   device: 'auto' | 'webgpu' | 'wasm'

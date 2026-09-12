@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   voice: DEFAULT_VOICE,
   backend: 'kokoro',
   visualEvery: 15,
+  singleVoice: true,
   rate: 1,
   device: 'auto',
 }

@@ -3,8 +3,7 @@ import type { PlaybackState, Plan, Settings, TimedPlan } from './types'
 import { parseMarkdown } from './lib/markdown'
 import { directScript } from './lib/openrouter'
 import { buildTimedPlan } from './lib/planner'
-import { DEMO_RESPONSE } from './lib/demoPlan'
-import { SAMPLE_MARKDOWN } from './lib/sample'
+import { DECKS, type DeckKey } from './lib/decks'
 import { validatePlan } from './lib/validate'
 import { DEFAULT_SETTINGS, loadDraft, loadSettings, saveDraft, saveSettings } from './lib/storage'
 import { Player } from './tts/player'
@@ -49,10 +48,16 @@ export default function App() {
     return () => window.clearTimeout(t)
   }, [markdown])
 
+  /** One narrator for the whole take, when the setting asks for it. */
+  const forcedVoice = settings.singleVoice ? settings.voice : undefined
+
   /** Pacing and speed are applied at build time, so changing them re-times the plan. */
   const timedPlan: TimedPlan | null = useMemo(
-    () => (plan ? buildTimedPlan(plan, settings.visualEvery, settings.rate) : null),
-    [plan, settings.visualEvery, settings.rate],
+    () =>
+      plan
+        ? buildTimedPlan(plan, settings.visualEvery, settings.rate, forcedVoice)
+        : null,
+    [plan, settings.visualEvery, settings.rate, forcedVoice],
   )
 
   const patchSettings = useCallback((patch: Partial<Settings>) => {
@@ -64,35 +69,39 @@ export default function App() {
   /** Shared tail of both entry points: load the voice model and roll. */
   const startTake = useCallback(
     async (fresh: Plan) => {
-      const timed = buildTimedPlan(fresh, settings.visualEvery, settings.rate)
+      const timed = buildTimedPlan(fresh, settings.visualEvery, settings.rate, forcedVoice)
       setView('stage')
       setStatus('Loading voice')
       await player.prepare(settings.backend, settings.device)
       player.load(timed, settings.rate)
       void player.play(0)
     },
-    [player, settings.backend, settings.device, settings.rate, settings.visualEvery],
+    [player, settings.backend, settings.device, settings.rate, settings.visualEvery, forcedVoice],
   )
 
-  /** Pre-baked take, so the stage is reachable before anyone has a key. */
-  const playDemo = useCallback(async () => {
-    setBusy(true)
-    setError('')
-    try {
-      const blocks = parseMarkdown(SAMPLE_MARKDOWN)
-      const { plan: demo, warnings: w } = validatePlan(DEMO_RESPONSE, blocks, 'demo')
-      setMarkdown(SAMPLE_MARKDOWN)
-      setPlan(demo)
-      setWarnings(w)
-      await startTake(demo)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      setView('editor')
-    } finally {
-      setBusy(false)
-      setStatus('')
-    }
-  }, [startTake])
+  /** Pre-baked takes, so the stage is reachable before anyone has a key. */
+  const playDemo = useCallback(
+    async (deck: DeckKey = 'demo') => {
+      setBusy(true)
+      setError('')
+      try {
+        const { markdown: src, response } = DECKS[deck]
+        const blocks = parseMarkdown(src)
+        const { plan: demo, warnings: w } = validatePlan(response, blocks, deck)
+        setMarkdown(src)
+        setPlan(demo)
+        setWarnings(w)
+        await startTake(demo)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+        setView('editor')
+      } finally {
+        setBusy(false)
+        setStatus('')
+      }
+    },
+    [startTake],
+  )
 
   const generate = useCallback(async () => {
     const blocks = parseMarkdown(markdown)
@@ -177,6 +186,8 @@ export default function App() {
         onToggle={() => void player.toggle()}
         onSeek={(i) => void player.seek(i)}
         onRestart={restart}
+        rate={settings.rate}
+        onRate={(r) => patchSettings({ rate: r })}
         onExit={exitStage}
       />
     )
@@ -194,7 +205,7 @@ export default function App() {
         onMarkdown={setMarkdown}
         onSettings={patchSettings}
         onGenerate={() => void generate()}
-        onDemo={() => void playDemo()}
+        onDemo={(deck) => void playDemo(deck)}
       />
       {plan && (
         <button

@@ -153,9 +153,22 @@ export function SettingsPanel({ settings, onChange }: Props) {
             </option>
           ))}
         </select>
-        <p className="mt-1.5 text-[11px] text-white/30">
-          The spine of the script. The director still casts other voices for asides and punchlines.
-        </p>
+        <label className="mt-2.5 flex cursor-pointer items-start gap-2.5">
+          <input
+            type="checkbox"
+            className="mt-[3px] accent-accent"
+            checked={settings.singleVoice}
+            onChange={(e) => onChange({ singleVoice: e.target.checked })}
+          />
+          <span className="text-[12px] text-white/55">
+            One voice throughout
+            <span className="mt-0.5 block text-[11px] text-white/30">
+              {settings.singleVoice
+                ? 'Every beat is recast to the host voice. Tempo, pitch and emphasis still change.'
+                : 'The director casts other voices for asides, quotes and punchlines.'}
+            </span>
+          </span>
+        </label>
       </section>
 
       {/* --------------------------------------------------------- pacing -- */}

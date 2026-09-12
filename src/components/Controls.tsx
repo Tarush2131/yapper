@@ -5,11 +5,17 @@ interface Props {
   plan: TimedPlan
   state: PlaybackState
   scriptOpen: boolean
+  rate: number
   onToggle(): void
   onSeek(index: number): void
   onRestart(): void
+  onRate(rate: number): void
   onToggleScript(): void
 }
+
+export const RATE_MIN = 0.7
+export const RATE_MAX = 1.5
+export const RATE_STEP = 0.05
 
 function clock(seconds: number): string {
   const s = Math.max(0, Math.round(seconds))
@@ -20,9 +26,11 @@ export function Controls({
   plan,
   state,
   scriptOpen,
+  rate,
   onToggle,
   onSeek,
   onRestart,
+  onRate,
   onToggleScript,
 }: Props) {
   const total = plan.estimatedDuration
@@ -118,9 +126,30 @@ export function Controls({
           <NextIcon />
         </button>
 
+        {/* Re-times the take in place, so you can slow a dense stretch down mid-play. */}
+        <div className="ml-2 flex items-center gap-2">
+          <label
+            htmlFor="stage-rate"
+            className="w-11 shrink-0 text-right font-mono text-[11px] tabular-nums text-white/35"
+          >
+            {rate.toFixed(2)}×
+          </label>
+          <input
+            id="stage-rate"
+            type="range"
+            min={RATE_MIN}
+            max={RATE_MAX}
+            step={RATE_STEP}
+            value={rate}
+            onChange={(e) => onRate(Number(e.target.value))}
+            className="w-20 accent-accent sm:w-28"
+            aria-label="Playback speed"
+          />
+        </div>
+
         <button
           type="button"
-          className="btn-icon ml-2"
+          className="btn-icon ml-1"
           onClick={onToggleScript}
           aria-pressed={scriptOpen}
           aria-label="Toggle script"

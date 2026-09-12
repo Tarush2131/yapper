@@ -259,8 +259,17 @@ export function carryLiteralVisuals(segments: Segment[]): Segment[] {
   })
 }
 
-export function buildTimedPlan(plan: Plan, visualEvery: number, rate: number): TimedPlan {
-  const withCarry = carryLiteralVisuals(plan.segments)
+export function buildTimedPlan(
+  plan: Plan,
+  visualEvery: number,
+  rate: number,
+  /** When set, every beat is recast to this voice — one narrator for the take. */
+  forceVoice?: string,
+): TimedPlan {
+  const cast = forceVoice
+    ? plan.segments.map((s) => (s.voice === forceVoice ? s : { ...s, voice: forceVoice }))
+    : plan.segments
+  const withCarry = carryLiteralVisuals(cast)
   const paced = enforceVisualCadence(withCarry, visualEvery)
 
   const segments: TimedSegment[] = paced.map((s) => {
@@ -287,6 +296,33 @@ export function activeChunkIndex(chunks: CaptionChunk[], progress: number): numb
     if (progress < chunks[i].end) return i
   }
   return chunks.length - 1
+}
+
+export interface ActiveSection {
+  title: string
+  points: string[]
+  /** Which point the narration has reached, by position within the section. */
+  active: number
+}
+
+/**
+ * The section showing at `index`. Consecutive beats sharing a title are one
+ * section; the active point advances with position through it, so the panel
+ * tracks the narration without needing a point per beat.
+ */
+export function sectionAt(segments: TimedSegment[], index: number): ActiveSection | null {
+  const here = segments[Math.min(Math.max(index, 0), segments.length - 1)]
+  if (!here?.section || !here.points?.length) return null
+
+  let start = index
+  while (start > 0 && segments[start - 1]?.section === here.section) start--
+  let end = index
+  while (end < segments.length - 1 && segments[end + 1]?.section === here.section) end++
+
+  const span = end - start
+  const through = span === 0 ? 0 : (index - start) / span
+  const active = Math.min(here.points.length - 1, Math.floor(through * here.points.length))
+  return { title: here.section, points: here.points, active }
 }
 
 /** The visual on screen at `index`, walking back to the last beat that set one. */

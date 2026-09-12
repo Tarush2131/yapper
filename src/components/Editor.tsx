@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Block, Settings } from '../types'
 import { parseMarkdown, wordCount } from '../lib/markdown'
 import { SAMPLE_MARKDOWN } from '../lib/sample'
+import { DECKS, type DeckKey } from '../lib/decks'
 import { SettingsPanel } from './SettingsPanel'
 import { SparkIcon } from './Icons'
 
@@ -15,7 +16,7 @@ interface Props {
   onMarkdown(md: string): void
   onSettings(patch: Partial<Settings>): void
   onGenerate(): void
-  onDemo(): void
+  onDemo(deck: DeckKey): void
 }
 
 export function Editor({
@@ -124,9 +125,17 @@ export function Editor({
               </>
             )}
           </button>
-          <button type="button" className="btn-ghost !py-3" disabled={busy} onClick={onDemo}>
-            Watch a finished take
-          </button>
+          {(Object.keys(DECKS) as DeckKey[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              className="btn-ghost !py-3"
+              disabled={busy}
+              onClick={() => onDemo(key)}
+            >
+              {DECKS[key].label}
+            </button>
+          ))}
           {!settings.apiKey.trim() && (
             <span className="text-[12px] text-white/35">
               Add an OpenRouter key to direct your own. The finished take is bundled — no key needed.

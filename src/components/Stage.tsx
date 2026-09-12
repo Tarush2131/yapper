@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PlaybackState, TimedPlan } from '../types'
-import { visualAt } from '../lib/planner'
+import { sectionAt, visualAt, type ActiveSection } from '../lib/planner'
 import { Captions } from './Captions'
-import { Controls } from './Controls'
+import { Controls, RATE_MAX, RATE_MIN, RATE_STEP } from './Controls'
 import { ScriptPanel } from './ScriptPanel'
 import { VisualLayer } from './visuals/VisualLayer'
 import { BackIcon, WaveIcon } from './Icons'
@@ -14,9 +14,11 @@ interface Props {
   load: LoadProgress | null
   device: string
   backend: string
+  rate: number
   onToggle(): void
   onSeek(index: number): void
   onRestart(): void
+  onRate(rate: number): void
   onExit(): void
 }
 
@@ -26,9 +28,11 @@ export function Stage({
   load,
   device,
   backend,
+  rate,
   onToggle,
   onSeek,
   onRestart,
+  onRate,
   onExit,
 }: Props) {
   const [scriptOpen, setScriptOpen] = useState(false)
@@ -38,6 +42,13 @@ export function Stage({
     () => visualAt(plan.segments, state.segmentIndex),
     [plan.segments, state.segmentIndex],
   )
+  const section = useMemo(
+    () => sectionAt(plan.segments, state.segmentIndex),
+    [plan.segments, state.segmentIndex],
+  )
+
+  const rateRef = useRef(rate)
+  rateRef.current = rate
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -53,6 +64,12 @@ export function Stage({
         case 'ArrowLeft':
           onSeek(state.segmentIndex - 1)
           break
+        case '[':
+          onRate(Math.max(RATE_MIN, Number((rateRef.current - RATE_STEP).toFixed(2))))
+          break
+        case ']':
+          onRate(Math.min(RATE_MAX, Number((rateRef.current + RATE_STEP).toFixed(2))))
+          break
         case 's':
         case 'S':
           setScriptOpen((v) => !v)
@@ -64,7 +81,7 @@ export function Stage({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onToggle, onSeek, onExit, state.segmentIndex])
+  }, [onToggle, onSeek, onExit, onRate, state.segmentIndex])
 
   const loading = state.status === 'loading-model'
 
@@ -84,8 +101,11 @@ export function Stage({
           </span>
         </header>
 
-        <main className="flex min-h-0 flex-1 items-center justify-center py-4">
-          <VisualLayer visual={visual} />
+        <main className="flex min-h-0 flex-1 items-center justify-center gap-6 px-4 py-4 sm:px-8">
+          <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center">
+            <VisualLayer visual={visual} />
+          </div>
+          {section && <SectionPanel section={section} />}
         </main>
 
         <Captions segment={segment} progress={state.segmentProgress} />
@@ -94,9 +114,11 @@ export function Stage({
           plan={plan}
           state={state}
           scriptOpen={scriptOpen}
+          rate={rate}
           onToggle={onToggle}
           onSeek={onSeek}
           onRestart={onRestart}
+          onRate={onRate}
           onToggleScript={() => setScriptOpen((v) => !v)}
         />
 
@@ -118,6 +140,42 @@ export function Stage({
         />
       )}
     </div>
+  )
+}
+
+/**
+ * The quiet layer: what this stretch of the talk is covering, held on screen
+ * while the diagram changes underneath it. Deliberately low contrast — it is a
+ * speaker's running order, not a second set of captions competing for the eye.
+ */
+function SectionPanel({ section }: { section: ActiveSection }) {
+  return (
+    <aside className="hidden w-[248px] shrink-0 self-center lg:block xl:w-[280px]">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">
+        {section.title}
+      </p>
+      <ul className="mt-3 space-y-2.5">
+        {section.points.map((p, i) => {
+          const done = i < section.active
+          const live = i === section.active
+          return (
+            <li key={p} className="flex gap-2.5">
+              <span
+                aria-hidden="true"
+                className="mt-[7px] h-[5px] w-[5px] shrink-0 rounded-full transition-colors duration-500"
+                style={{ background: live ? '#ffe14d' : done ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.12)' }}
+              />
+              <span
+                className="text-[13px] leading-snug transition-colors duration-500"
+                style={{ color: live ? 'rgba(255,255,255,0.88)' : done ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.22)' }}
+              >
+                {p}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </aside>
   )
 }
 

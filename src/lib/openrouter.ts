@@ -127,7 +127,7 @@ export async function directScript(
   if (!blocks.length) throw new Error('There is nothing to narrate.')
 
   const batches = batchBlocks(blocks)
-  const system = systemPrompt(settings.visualEvery, settings.voice)
+  const system = systemPrompt(settings.visualEvery, settings.voice, settings.singleVoice)
 
   const allSegments: Segment[] = []
   const warnings: string[] = []
